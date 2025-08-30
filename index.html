@@ -3,23 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz App</title>
-    <link rel="stylesheet" href="Quiz.css">
+    <title>type racer</title>
 </head>
 <body>
-    <div class="app">
-        <h1>Simple Quiz</h1>
-        <div class="quiz">
-            <h2 id="question">Which Programming Languages do I use?</h2>
-            <div id="answer-buttons">
-                <button class="btn">Html</button>
-                <button class="btn">CSS</button>
-                <button class="btn">JavaScript</button>
-                <button class="btn">Arabic</button>
-            </div>
-            <button id="next-btn">Next</button>
-        </div>
+    
+    
+    <div id="gameContainer">
+        <h1>Type Racer</h1>
+        <p id="quote">Loading quote...</p>
+        <input type="text" id="userInput" placeholder="Start typing here...">
+        <button id="startButton">Start Game</button>
+        <div id="timer">Time: 0.00</div>
+        <div id="results"></div>
+        <ul id="players"></ul>
     </div>
-    <script src="script.js"></script>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            color: #fff;
+        }
+
+        #gameContainer {
+            text-align: center;
+            background-color: #111;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        #quote {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .correct {
+            color: green;
+            text-decoration: line-through;
+        }
+
+        .incorrect {
+            color: red;
+        }
+
+        #userInput {
+            padding: 10px;
+            width: 80%;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #222;
+            color: #fff;
+        }
+
+        #startButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #timer {
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        #players {
+            list-style: none;
+            padding: 0;
+        }
+
+        #players li {
+            margin-bottom: 5px;
+        }
+    </style>
+
+    <script>
+        const quoteElement = document.getElementById('quote');
+        const userInputElement = document.getElementById('userInput');
+        const startButton = document.getElementById('startButton');
+        const timerElement = document.getElementById('timer');
+        const resultsElement = document.getElementById('results');
+        const playersElement = document.getElementById('players');
+
+        let quote = "";
+        let startTime;
+        let timerInterval;
+        let gameStarted = false;
+        let words = [];
+        let wordIndex = 0;
+
+        // Example quotes - replace with a larger set from an API or local file
+        const quotes = [
+            "The quick brown fox jumps over the lazy dog.",
+            "Programming is an art, and a science.",
+            "To be or not to be, that is the question.",
+            "The future is already here – it's just not very evenly distributed.",
+            "Innovation distinguishes between a leader and a follower."
+        ];
+
+        function startGame() {
+            gameStarted = true;
+            startButton.disabled = true;
+            userInputElement.disabled = false;
+            userInputElement.focus();
+            quote = quotes[Math.floor(Math.random() * quotes.length)];
+            words = quote.split(" ");
+            wordIndex = 0;
+            quoteElement.innerHTML = "";
+            words.forEach(word => {
+                const span = document.createElement("span");
+                span.innerText = word + " ";
+                quoteElement.appendChild(span);
+            });
+
+
+            startTime = new Date().getTime();
+            timerInterval = setInterval(updateTimer, 10);
+        }
+
+        function updateTimer() {
+            const currentTime = new Date().getTime();
+            const elapsedTime = (currentTime - startTime) / 1000;
+            timerElement.innerText = "Time: " + elapsedTime.toFixed(2);
+        }
+
+        function endGame() {
+            gameStarted = false;
+            clearInterval(timerInterval);
+            const endTime = new Date().getTime();
+            const elapsedTime = (endTime - startTime) / 1000;
+            const wordsPerMinute = Math.round((words.length / elapsedTime) * 60);
+            resultsElement.innerText = `Time: ${elapsedTime.toFixed(2)} seconds. Words per minute: ${wordsPerMinute}`;
+            startButton.disabled = false;
+            userInputElement.disabled = true;
+        }
+
+        startButton.addEventListener('click', startGame);
+
+        userInputElement.addEventListener('input', () => {
+            if (!gameStarted) return;
+
+            const currentWord = words[wordIndex];
+            const typedValue = userInputElement.value.trim();
+            const quoteWords = quoteElement.querySelectorAll("span");
+
+            if (typedValue === currentWord) {
+                quoteWords[wordIndex].className = "correct";
+                wordIndex++;
+                userInputElement.value = "";
+
+                if (wordIndex >= words.length) {
+                    endGame();
+                }
+            } else if (currentWord.startsWith(typedValue)) {
+                quoteWords[wordIndex].className = ""; //remove incorrect class
+            }
+            else {
+                quoteWords[wordIndex].className = "incorrect";
+            }
+        });
+
+        userInputElement.addEventListener('keydown', function(event) {
+            if (event.key === ' ') {
+                 if (!gameStarted) return;
+
+                const currentWord = words[wordIndex];
+                const typedValue = userInputElement.value.trim();
+                const quoteWords = quoteElement.querySelectorAll("span");
+
+                if (typedValue !== currentWord) {
+                    quoteWords[wordIndex].className = "incorrect";
+                    event.preventDefault(); // Prevent adding space if word is incorrect
+                }
+            }
+        });
+
+        userInputElement.disabled = true; // Disable until start is pressed
+
+
+        // Basic multiplayer simulation (replace with WebSocket for real-time)
+        function updatePlayersList() {
+            // In a real application, this would fetch player data from the server
+            const players = [
+                { name: "Player1", wpm: 60 },
+                { name: "Player2", wpm: 75 },
+                { name: "Player3", wpm: 50 }
+            ];
+
+            playersElement.innerHTML = "";
+            players.forEach(player => {
+                const li = document.createElement("li");
+                li.innerText = `${player.name}: ${player.wpm} WPM`;
+                playersElement.appendChild(li);
+            });
+        }
+
+        // Simulate updates every 5 seconds
+        setInterval(updatePlayersList, 5000);
+        updatePlayersList(); // Initial update
+    </script>
+    
+    <script>
+        // Function to fetch a random WPM from a hypothetical AI service
+        async function getAiWPM() {
+            // Replace with actual API endpoint
+            const apiUrl = 'https://api.example.com/ai/wpm';
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                return data.wpm; // Assuming the API returns a JSON with a 'wpm' field
+            } catch (error) {
+                console.error("Error fetching WPM from AI:", error);
+                return Math.floor(Math.random() * (50 - 30 + 1)) + 30; // Fallback to random WPM between 30-50
+            }
+        }
+
+        // Update players list with AI-generated WPM
+        async function updatePlayersList() {
+            const aiWPM = await getAiWPM();
+            const players = [
+                { name: "AI Player 1", wpm: aiWPM },
+                { name: "Player2", wpm: Math.floor(Math.random() * (80 - 60 + 1)) + 60 },
+                { name: "Player3", wpm: Math.floor(Math.random() * (40 - 20 + 1)) + 20 }
+            ];
+
+            playersElement.innerHTML = "";
+            players.forEach(player => {
+                const li = document.createElement("li");
+                li.innerText = `${player.name}: ${player.wpm} WPM`;
+                playersElement.appendChild(li);
+            });
+        }
+
+        // Simulate updates every 5 seconds
+        setInterval(updatePlayersList, 5000);
+        updatePlayersList(); // Initial update
+    </script>
 </body>
 </html>
